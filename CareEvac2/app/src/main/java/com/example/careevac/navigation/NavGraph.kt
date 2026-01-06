@@ -1,0 +1,81 @@
+package com.example.careevac.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.example.careevac.ui.screens.*
+import com.example.careevac.viewmodel.AuthViewModel
+import com.example.careevac.viewmodel.ResidentViewModel
+
+sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object SignUp : Screen("signup")
+    object Home : Screen("home")
+    object Admin : Screen("admin")
+    object Emergency : Screen("emergency")
+}
+
+@Composable
+fun NavGraph(
+    navController: NavHostController,
+    isLoggedIn: Boolean
+) {
+    val authViewModel: AuthViewModel = viewModel()
+    val residentViewModel: ResidentViewModel = viewModel()
+
+    NavHost(
+        navController = navController,
+        startDestination = if (isLoggedIn) Screen.Home.route else Screen.Login.route
+    ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onNavigateToSignUp = {
+                    navController.navigate(Screen.SignUp.route)
+                },
+                onLoginSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                viewModel = authViewModel
+            )
+        }
+
+        composable(Screen.SignUp.route) {
+            SignUpScreen(
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                },
+                onSignUpSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.SignUp.route) { inclusive = true }
+                    }
+                },
+                viewModel = authViewModel
+            )
+        }
+
+        composable(Screen.Home.route) {
+            HomeScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable(Screen.Admin.route) {
+            ResidentListScreen(
+                navController = navController,
+                viewModel = residentViewModel
+            )
+        }
+
+        composable(Screen.Emergency.route) {
+            EmergencyScreen(
+                navController = navController,
+                viewModel = residentViewModel
+            )
+        }
+    }
+}

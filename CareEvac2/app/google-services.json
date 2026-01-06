@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1039500495922",
+    "project_id": "careevac",
+    "storage_bucket": "careevac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039500495922:android:4987625351bfab605f802b",
+        "android_client_info": {
+          "package_name": "com.example.careevac"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANmJCLwRNFMnvX2489Rx4Rgdb_8rtkQ2E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
