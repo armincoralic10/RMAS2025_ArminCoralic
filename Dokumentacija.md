@@ -57,3 +57,25 @@ Izrada ove aplikacije mi je omogućila da savladam:
 * **MVVM Arhitekturu:** Pravilno razdvajanje logike od dizajna (Model-View-ViewModel).
 * **Firebase (Firestore & Auth):** Rad sa bazama podataka u realnom vremenu i upravljanje korisničkim nalozima.
 * **Coroutines & Flow:** Rukovanje podacima koji se asinhrono učitavaju sa interneta.
+
+---
+
+### f. Krizni scenario i uloga korisnika
+
+Na osnovu povratnih informacija sa prezentacije koncepta, uloga korisnika je precizno definisana kako bi aplikacija bila primjenjiva u realnim uslovima:
+
+* **Uloga Koordinatora:** Aplikacija nije namijenjena osoblju koje vrši fizičku evakuaciju (nošenje stanara), već **koordinatoru evakuacije** (npr. glavna sestra ili šef smjene). 
+* **Scenario korištenja:** U slučaju požara ili druge opasnosti, koordinator zauzima poziciju na sigurnosnom izlazu ili zbornom mjestu. Kako timovi iznose stanare, koordinator ih jednim dodirom (One-tap) označava kao evakuisane. 
+* **Smanjenje kognitivnog opterećenja:** Lista automatski fokusira neevakuisane osobe i prioritetne grupe (nepokretne), omogućavajući koordinatoru da u sekundi odgovori na pitanje: *"Ko je još ostao u zgradi?"* bez potrebe za pretraživanjem ili dodatnom interakcijom.
+
+---
+
+### g. Plan za sljedeću fazu razvoja
+
+U narednoj fazi projekta planirane su sljedeće nadogradnje koje će dodatno optimizovati rad:
+
+1.  **Validacija passworda i emaila:** implementacija validacija za email i password
+2.  **Dodavanje novih stanara - CRUD:** Implementacija CRUD operacija, dodavanje, brisanje i update stanara 
+3.  **Verifikacija emaila** Generisanje linka koji bi dolazio na email novog korisnika aplikacije kako bi se account verifikovao
+4.  **Implementacija Rola:** - **Super admin** (puni pristup svemu, kreira admine i upravlja njima, moze brisati/deaktivirati korisnike, vidi sve ustanove), **admin** (upravlja stanarima (dodaje, uredjuje i brise), vidi sve podatke u svojoj ustanovi, upravlja osobljem(staff) i resetuje evakuacije), **staff** (oznacava stanare kao evakuisane, vidi listu stanara, ne moze dodavati/brisati stanare, samo izvrsava evakuaciju)
+
