@@ -12,6 +12,7 @@ import com.example.careevac.viewmodel.ResidentViewModel
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
+    object ForgotPassword : Screen("forgot_password")
     object Home : Screen("home")
     object Admin : Screen("admin")
     object Emergency : Screen("emergency")
@@ -34,6 +35,7 @@ fun NavGraph(
                 onNavigateToSignUp = {
                     navController.navigate(Screen.SignUp.route)
                 },
+                onNavigateToForgotPassword = { navController.navigate(Screen.ForgotPassword.route) },
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
@@ -75,6 +77,12 @@ fun NavGraph(
             EmergencyScreen(
                 navController = navController,
                 viewModel = residentViewModel
+            )
+        }
+        composable(Screen.ForgotPassword.route) {
+            ForgotPasswordScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = authViewModel
             )
         }
     }

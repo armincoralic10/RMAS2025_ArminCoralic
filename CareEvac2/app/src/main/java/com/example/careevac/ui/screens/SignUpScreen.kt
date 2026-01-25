@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.careevac.R
+import com.example.careevac.utils.ValidationHelper
 import com.example.careevac.viewmodel.AuthViewModel
 
 @Composable
@@ -42,6 +43,10 @@ fun SignUpScreen(
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    var fullNameError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
 
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -74,7 +79,6 @@ fun SignUpScreen(
                 tint = Color.Unspecified
             )
 
-
             Spacer(modifier = Modifier.height(32.dp))
 
             Card(
@@ -102,7 +106,10 @@ fun SignUpScreen(
 
                     OutlinedTextField(
                         value = fullNameInput,
-                        onValueChange = { fullNameInput = it },
+                        onValueChange = {
+                            fullNameInput = it
+                            fullNameError = null
+                        },
                         label = { Text("Ime i prezime") },
                         leadingIcon = {
                             Icon(
@@ -119,14 +126,26 @@ fun SignUpScreen(
                             onNext = { focusManager.moveFocus(FocusDirection.Down) }
                         ),
                         singleLine = true,
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        isError = fullNameError != null,
+                        supportingText = {
+                            if (fullNameError != null) {
+                                Text(
+                                    text = fullNameError ?: "",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = emailInput,
-                        onValueChange = { emailInput = it },
+                        onValueChange = {
+                            emailInput = it
+                            emailError = null
+                        },
                         label = { Text("Email") },
                         leadingIcon = {
                             Icon(
@@ -143,14 +162,26 @@ fun SignUpScreen(
                             onNext = { focusManager.moveFocus(FocusDirection.Down) }
                         ),
                         singleLine = true,
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        isError = emailError != null,
+                        supportingText = {
+                            if (emailError != null) {
+                                Text(
+                                    text = emailError ?: "",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = passwordInput,
-                        onValueChange = { passwordInput = it },
+                        onValueChange = {
+                            passwordInput = it
+                            passwordError = null
+                        },
                         label = { Text("Lozinka") },
                         leadingIcon = {
                             Icon(
@@ -184,20 +215,27 @@ fun SignUpScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                if (fullNameInput.isNotBlank() &&
-                                    emailInput.isNotBlank() &&
-                                    passwordInput.isNotBlank()) {
-                                    viewModel.register(
-                                        emailInput,
-                                        passwordInput,
-                                        fullNameInput,
-                                        onSignUpSuccess
-                                    )
-                                }
+                                handleSignUp(
+                                    fullNameInput, emailInput, passwordInput,
+                                    onFullNameError = { fullNameError = it },
+                                    onEmailError = { emailError = it },
+                                    onPasswordError = { passwordError = it },
+                                    viewModel = viewModel,
+                                    onSuccess = onSignUpSuccess
+                                )
                             }
                         ),
                         singleLine = true,
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        isError = passwordError != null,
+                        supportingText = {
+                            if (passwordError != null) {
+                                Text(
+                                    text = passwordError ?: "",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -223,24 +261,19 @@ fun SignUpScreen(
 
                     Button(
                         onClick = {
-                            if (fullNameInput.isNotBlank() &&
-                                emailInput.isNotBlank() &&
-                                passwordInput.isNotBlank()) {
-                                viewModel.register(
-                                    emailInput,
-                                    passwordInput,
-                                    fullNameInput,
-                                    onSignUpSuccess
-                                )
-                            }
+                            handleSignUp(
+                                fullNameInput, emailInput, passwordInput,
+                                onFullNameError = { fullNameError = it },
+                                onEmailError = { emailError = it },
+                                onPasswordError = { passwordError = it },
+                                viewModel = viewModel,
+                                onSuccess = onSignUpSuccess
+                            )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        enabled = !isLoading &&
-                                fullNameInput.isNotBlank() &&
-                                emailInput.isNotBlank() &&
-                                passwordInput.isNotBlank(),
+                        enabled = !isLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF2C2C2C),
                             disabledContainerColor = Color(0xFF9E9E9E)
@@ -284,5 +317,28 @@ fun SignUpScreen(
                 }
             }
         }
+    }
+}
+
+private fun handleSignUp(
+    fullName: String,
+    email: String,
+    password: String,
+    onFullNameError: (String?) -> Unit,
+    onEmailError: (String?) -> Unit,
+    onPasswordError: (String?) -> Unit,
+    viewModel: AuthViewModel,
+    onSuccess: () -> Unit
+) {
+    val fullNameValidation = ValidationHelper.validateFullName(fullName)
+    val emailValidation = ValidationHelper.validateEmail(email)
+    val passwordValidation = ValidationHelper.validatePassword(password)
+
+    onFullNameError(if (fullNameValidation.isValid) null else fullNameValidation.errorMessage)
+    onEmailError(if (emailValidation.isValid) null else emailValidation.errorMessage)
+    onPasswordError(if (passwordValidation.isValid) null else passwordValidation.errorMessage)
+
+    if (fullNameValidation.isValid && emailValidation.isValid && passwordValidation.isValid) {
+        viewModel.register(email, password, fullName, onSuccess)
     }
 }

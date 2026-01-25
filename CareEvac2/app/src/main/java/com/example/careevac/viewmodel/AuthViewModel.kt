@@ -82,4 +82,16 @@ class AuthViewModel(
     fun clearError() {
         _errorMessage.value = null
     }
+
+    suspend fun sendPasswordResetEmail(email: String): Boolean {
+        return repository.sendPasswordResetEmail(email)
+    }
+
+    suspend fun sendEmailVerification(): Boolean {
+        return repository.sendEmailVerification()
+    }
+
+    fun isEmailVerified(): Boolean {
+        return repository.isEmailVerified()
+    }
 }

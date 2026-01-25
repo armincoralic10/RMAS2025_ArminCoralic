@@ -1,29 +1,22 @@
 package com.example.careevac.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,41 +24,39 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.careevac.R
 import com.example.careevac.utils.ValidationHelper
 import com.example.careevac.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(
-    onNavigateToSignUp: () -> Unit,
-    onLoginSuccess: () -> Unit,
-    onNavigateToForgotPassword: () -> Unit,
+fun ForgotPasswordScreen(
+    onNavigateBack: () -> Unit,
     viewModel: AuthViewModel = viewModel()
 ) {
     var emailInput by remember { mutableStateOf("") }
-    var passwordInput by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-
     var emailError by remember { mutableStateOf<String?>(null) }
-    var passwordError by remember { mutableStateOf<String?>(null) }
-
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
+    var isLoading by remember { mutableStateOf(false) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
-            kotlinx.coroutines.delay(3000)
-            viewModel.clearError()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Zaboravili ste lozinku?") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Nazad")
+                    }
+                }
+            )
         }
-    }
-
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF5F5F5)
-    ) {
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .padding(paddingValues)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -73,7 +64,7 @@ fun LoginScreen(
             Icon(
                 painter = painterResource(id = R.drawable.careevac),
                 contentDescription = "CareEvac Logo",
-                modifier = Modifier.size(300.dp),
+                modifier = Modifier.size(120.dp),
                 tint = Color.Unspecified
             )
 
@@ -94,10 +85,19 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Prijavite se",
+                        text = "Reset lozinke",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Unesite vašu email adresu i poslat ćemo vam link za reset lozinke.",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -107,6 +107,8 @@ fun LoginScreen(
                         onValueChange = {
                             emailInput = it
                             emailError = null
+                            successMessage = null
+                            errorMessage = null
                         },
                         label = { Text("Email") },
                         leadingIcon = {
@@ -118,10 +120,21 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next
+                            imeAction = ImeAction.Done
                         ),
                         keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            onDone = {
+                                focusManager.clearFocus()
+                                handlePasswordReset(
+                                    emailInput,
+                                    onEmailError = { emailError = it },
+                                    onLoading = { isLoading = it },
+                                    onSuccess = { successMessage = it },
+                                    onError = { errorMessage = it },
+                                    viewModel = viewModel,
+                                    scope = scope
+                                )
+                            }
                         ),
                         singleLine = true,
                         enabled = !isLoading,
@@ -136,83 +149,26 @@ fun LoginScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    OutlinedTextField(
-                        value = passwordInput,
-                        onValueChange = {
-                            passwordInput = it
-                            passwordError = null
-                        },
-                        label = { Text("Lozinka") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Password"
+                    if (successMessage != null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFE8F5E9)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = successMessage ?: "",
+                                color = Color(0xFF2E7D32),
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(12.dp),
+                                textAlign = TextAlign.Center
                             )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible)
-                                        Icons.Default.Visibility
-                                    else
-                                        Icons.Default.VisibilityOff,
-                                    contentDescription = if (passwordVisible)
-                                        "Sakrij lozinku"
-                                    else
-                                        "Prikaži lozinku"
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                handleLogin(
-                                    emailInput, passwordInput,
-                                    onEmailError = { emailError = it },
-                                    onPasswordError = { passwordError = it },
-                                    viewModel = viewModel,
-                                    onSuccess = onLoginSuccess
-                                )
-                            }
-                        ),
-                        singleLine = true,
-                        enabled = !isLoading,
-                        isError = passwordError != null,
-                        supportingText = {
-                            if (passwordError != null) {
-                                Text(
-                                    text = passwordError ?: "",
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
                         }
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TextButton(
-                        onClick = onNavigateToForgotPassword,
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text(
-                            text = "Zaboravili ste lozinku?",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     if (errorMessage != null) {
                         Card(
@@ -235,12 +191,14 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-                            handleLogin(
-                                emailInput, passwordInput,
+                            handlePasswordReset(
+                                emailInput,
                                 onEmailError = { emailError = it },
-                                onPasswordError = { passwordError = it },
+                                onLoading = { isLoading = it },
+                                onSuccess = { successMessage = it },
+                                onError = { errorMessage = it },
                                 viewModel = viewModel,
-                                onSuccess = onLoginSuccess
+                                scope = scope
                             )
                         },
                         modifier = Modifier
@@ -261,7 +219,7 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                text = "PRIJAVI SE",
+                                text = "POŠALJI LINK",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -270,22 +228,12 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    TextButton(onClick = onNavigateBack) {
                         Text(
-                            text = "Nemate nalog?",
-                            color = Color.Gray,
+                            text = "Nazad na prijavu",
+                            color = Color.Black,
                             fontSize = 14.sp
                         )
-                        TextButton(onClick = onNavigateToSignUp) {
-                            Text(
-                                text = "Kreirajte nalog",
-                                color = Color.Black,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
                     }
                 }
             }
@@ -293,21 +241,33 @@ fun LoginScreen(
     }
 }
 
-private fun handleLogin(
+private fun handlePasswordReset(
     email: String,
-    password: String,
     onEmailError: (String?) -> Unit,
-    onPasswordError: (String?) -> Unit,
+    onLoading: (Boolean) -> Unit,
+    onSuccess: (String) -> Unit,
+    onError: (String) -> Unit,
     viewModel: AuthViewModel,
-    onSuccess: () -> Unit
+    scope: kotlinx.coroutines.CoroutineScope
 ) {
     val emailValidation = ValidationHelper.validateEmail(email)
-    val passwordValidation = ValidationHelper.validatePassword(password)
 
-    onEmailError(if (emailValidation.isValid) null else emailValidation.errorMessage)
-    onPasswordError(if (passwordValidation.isValid) null else passwordValidation.errorMessage)
+    if (!emailValidation.isValid) {
+        onEmailError(emailValidation.errorMessage)
+        return
+    }
 
-    if (emailValidation.isValid && passwordValidation.isValid) {
-        viewModel.login(email, password, onSuccess)
+    onEmailError(null)
+    onLoading(true)
+
+    scope.launch {
+        val success = viewModel.sendPasswordResetEmail(email)
+        onLoading(false)
+
+        if (success) {
+            onSuccess("Link za reset lozinke je poslat na $email")
+        } else {
+            onError("Email adresa ne postoji ili greška pri slanju")
+        }
     }
 }

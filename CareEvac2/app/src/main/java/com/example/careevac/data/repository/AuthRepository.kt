@@ -38,6 +38,8 @@ class AuthRepository {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val uid = authResult.user?.uid ?: return null
 
+            auth.currentUser?.sendEmailVerification()?.await()
+
             val user = User(
                 uid = uid,
                 email = email,
@@ -52,6 +54,28 @@ class AuthRepository {
         } catch (e: Exception) {
             null
         }
+    }
+
+    suspend fun sendPasswordResetEmail(email: String): Boolean {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun sendEmailVerification(): Boolean {
+        return try {
+            auth.currentUser?.sendEmailVerification()?.await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun isEmailVerified(): Boolean {
+        return auth.currentUser?.isEmailVerified ?: false
     }
 
     fun logout() {
