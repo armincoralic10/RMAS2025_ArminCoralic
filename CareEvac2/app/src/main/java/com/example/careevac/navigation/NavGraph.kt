@@ -76,13 +76,30 @@ fun NavGraph(
         composable(Screen.Emergency.route) {
             EmergencyScreen(
                 navController = navController,
-                viewModel = residentViewModel
+                viewModel = residentViewModel,
+                authViewModel = authViewModel
             )
         }
         composable(Screen.ForgotPassword.route) {
             ForgotPasswordScreen(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = authViewModel
+            )
+        }
+
+        composable("add_resident") {
+            AddEditResidentScreen(
+                navController = navController,
+                viewModel = residentViewModel
+            )
+        }
+
+        composable("edit_resident/{residentId}") { backStackEntry ->
+            val residentId = backStackEntry.arguments?.getString("residentId")
+            AddEditResidentScreen(
+                navController = navController,
+                viewModel = residentViewModel,
+                residentId = residentId
             )
         }
     }

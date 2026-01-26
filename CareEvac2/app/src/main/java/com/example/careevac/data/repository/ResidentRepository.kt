@@ -58,6 +58,51 @@ class ResidentRepository {
         }
     }
 
+    suspend fun markAsNotEvacuated(residentId: String): Boolean {
+        return try {
+            residentsCollection
+                .document(residentId)
+                .update("isEvacuated", false)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun addResident(resident: Resident): Boolean {
+        return try {
+            residentsCollection.add(resident).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun updateResident(resident: Resident): Boolean {
+        return try {
+            residentsCollection
+                .document(resident.id)
+                .set(resident)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun deleteResident(residentId: String): Boolean {
+        return try {
+            residentsCollection
+                .document(residentId)
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun resetAllEvacuations(): Boolean {
         return try {
             val snapshot = residentsCollection.get().await()

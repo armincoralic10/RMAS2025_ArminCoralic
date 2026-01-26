@@ -1,35 +1,24 @@
 package com.example.careevac.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.careevac.R
@@ -54,6 +43,11 @@ fun HomeScreen(
                             Text(
                                 text = "Dobrodošli, ${it.fullName}",
                                 fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "Rola: ${getRoleName(it.role)}",
+                                fontSize = 10.sp,
                                 color = Color.Gray
                             )
                         }
@@ -105,7 +99,11 @@ fun HomeScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(48.dp))
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "POKRENI HITNU\nEVAKUACIJU",
@@ -118,16 +116,46 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = { navController.navigate(Screen.Admin.route) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray, contentColor = Color.Black),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Settings, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Administracija stanara", fontWeight = FontWeight.Medium)
+            if (currentUser?.isAdmin() == true) {
+                Button(
+                    onClick = { navController.navigate(Screen.Admin.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.LightGray,
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Settings, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Administracija stanara", fontWeight = FontWeight.Medium)
+                }
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFF3E0)
+                    )
+                ) {
+                    Text(
+                        text = "Nemate pristup administraciji (samo Admin)",
+                        modifier = Modifier.padding(16.dp),
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFFE65100)
+                    )
+                }
             }
         }
+    }
+}
+
+private fun getRoleName(role: String): String {
+    return when (role) {
+        "super_admin" -> "Super Admin"
+        "admin" -> "Admin"
+        "staff" -> "Osoblje"
+        else -> "Nepoznato"
     }
 }

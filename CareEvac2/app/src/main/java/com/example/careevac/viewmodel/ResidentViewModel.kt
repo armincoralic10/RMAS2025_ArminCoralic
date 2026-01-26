@@ -94,6 +94,42 @@ class ResidentViewModel(
         }
     }
 
+    fun undoEvacuation(residentId: String) {
+        viewModelScope.launch {
+            val residentBefore = _residents.value.find { it.id == residentId }
+            if (residentBefore == null) return@launch
+
+            val updatedList = _residents.value.map { resident ->
+                if (resident.id == residentId) {
+                    resident.copy(isEvacuated = false)
+                } else {
+                    resident
+                }
+            }.sortedByPriority()
+
+            lastOptimisticUpdateTime = System.currentTimeMillis()
+            _residents.value = updatedList
+
+            val success = repository.markAsNotEvacuated(residentId)
+
+            if (success) {
+                delay(600)
+                lastOptimisticUpdateTime = 0L
+            } else {
+                _errorMessage.value = "Greška pri vraćanju stanara"
+                lastOptimisticUpdateTime = 0L
+
+                _residents.value = _residents.value.map { resident ->
+                    if (resident.id == residentId) {
+                        resident.copy(isEvacuated = true)
+                    } else {
+                        resident
+                    }
+                }.sortedByPriority()
+            }
+        }
+    }
+
     fun resetAllEvacuations() {
         viewModelScope.launch {
             val updatedList = _residents.value.map { resident ->
@@ -129,5 +165,17 @@ class ResidentViewModel(
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    suspend fun addResident(resident: Resident): Boolean {
+        return repository.addResident(resident)
+    }
+
+    suspend fun updateResident(resident: Resident): Boolean {
+        return repository.updateResident(resident)
+    }
+
+    suspend fun deleteResident(residentId: String): Boolean {
+        return repository.deleteResident(residentId)
     }
 }

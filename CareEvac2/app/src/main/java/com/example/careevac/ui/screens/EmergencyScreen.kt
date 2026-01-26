@@ -26,7 +26,8 @@ import com.example.careevac.viewmodel.ResidentViewModel
 @Composable
 fun EmergencyScreen(
     navController: NavController,
-    viewModel: ResidentViewModel
+    viewModel: ResidentViewModel,
+    authViewModel: com.example.careevac.viewmodel.AuthViewModel
 ) {
     var selectedTabIndex by remember { mutableStateOf(1) }
     val tabs = listOf("PRIORITETI", "SVI", "EVAK.")
@@ -34,6 +35,7 @@ fun EmergencyScreen(
     val residents by viewModel.residents.collectAsState()
     val evacuatedCount by viewModel.evacuatedCount.collectAsState()
     val waitingCount by viewModel.waitingCount.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
 
     Scaffold(
         topBar = {
@@ -45,8 +47,10 @@ fun EmergencyScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { viewModel.resetAllEvacuations() }) {
-                        Text("RESET", color = Color.Red)
+                    if (currentUser?.isAdmin() == true) {
+                        TextButton(onClick = { viewModel.resetAllEvacuations() }) {
+                            Text("RESET", color = Color.Red)
+                        }
                     }
                 }
             )
@@ -123,6 +127,9 @@ fun EmergencyScreen(
                         resident = resident,
                         onEvacuateClick = {
                             viewModel.markAsEvacuated(resident.id)
+                        },
+                        onUndoClick = {
+                            viewModel.undoEvacuation(resident.id)
                         }
                     )
                 }
@@ -132,15 +139,18 @@ fun EmergencyScreen(
 }
 
 @Composable
-fun EmergencyResidentCard(resident: Resident, onEvacuateClick: () -> Unit) {
+fun EmergencyResidentCard(
+    resident: Resident,
+    onEvacuateClick: () -> Unit,
+    onUndoClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (resident.isEvacuated) Color(0xFFE8F5E9) else Color.White
         ),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
-        onClick = { onEvacuateClick() }
+        border = BorderStroke(1.dp, Color(0xFFEEEEEE))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -183,12 +193,25 @@ fun EmergencyResidentCard(resident: Resident, onEvacuateClick: () -> Unit) {
                     Text("EVAKUIŠI", fontWeight = FontWeight.Bold)
                 }
             } else {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = "Evakuisan",
-                    tint = Color(0xFF2E7D32),
-                    modifier = Modifier.size(32.dp)
-                )
+                Row {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Evakuisan",
+                        tint = Color(0xFF2E7D32),
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = onUndoClick,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFFFF6F00)
+                        ),
+                        border = BorderStroke(1.dp, Color(0xFFFF6F00)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("VRATI", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
             }
         }
     }
