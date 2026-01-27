@@ -16,6 +16,7 @@ sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Admin : Screen("admin")
     object Emergency : Screen("emergency")
+    object UserManagement : Screen("user_management")
 }
 
 @Composable
@@ -51,7 +52,7 @@ fun NavGraph(
                     navController.popBackStack()
                 },
                 onSignUpSuccess = {
-                    navController.navigate(Screen.Home.route) {
+                    navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.SignUp.route) { inclusive = true }
                     }
                 },
@@ -100,6 +101,12 @@ fun NavGraph(
                 navController = navController,
                 viewModel = residentViewModel,
                 residentId = residentId
+            )
+        }
+        composable("user_management") {
+            UserManagementScreen(
+                navController = navController,
+                authViewModel = authViewModel
             )
         }
     }

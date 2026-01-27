@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.careevac.R
 import com.example.careevac.utils.ValidationHelper
 import com.example.careevac.viewmodel.AuthViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
@@ -53,8 +54,22 @@ fun LoginScreen(
 
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
-            kotlinx.coroutines.delay(3000)
-            viewModel.clearError()
+            if (!errorMessage!!.contains("Uspješna", ignoreCase = true)) {
+                delay(3000)
+                viewModel.clearError()
+            }
+        }
+    }
+
+    val onLoginClick = {
+        val emailValidation = ValidationHelper.validateEmail(emailInput)
+        val passwordValidation = ValidationHelper.validatePassword(passwordInput)
+
+        emailError = if (emailValidation.isValid) null else emailValidation.errorMessage
+        passwordError = if (passwordValidation.isValid) null else passwordValidation.errorMessage
+
+        if (emailValidation.isValid && passwordValidation.isValid) {
+            viewModel.login(emailInput, passwordInput, onLoginSuccess)
         }
     }
 
@@ -177,13 +192,7 @@ fun LoginScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 focusManager.clearFocus()
-                                handleLogin(
-                                    emailInput, passwordInput,
-                                    onEmailError = { emailError = it },
-                                    onPasswordError = { passwordError = it },
-                                    viewModel = viewModel,
-                                    onSuccess = onLoginSuccess
-                                )
+                                onLoginClick()
                             }
                         ),
                         singleLine = true,
@@ -215,16 +224,20 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (errorMessage != null) {
+                        val isSuccess = errorMessage?.contains("Uspješna", ignoreCase = true) == true
+                        val bgColor = if (isSuccess) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
+                        val textColor = if (isSuccess) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFFEBEE)
+                                containerColor = bgColor
                             ),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
                                 text = errorMessage ?: "",
-                                color = Color(0xFFD32F2F),
+                                color = textColor,
                                 fontSize = 14.sp,
                                 modifier = Modifier.padding(12.dp),
                                 textAlign = TextAlign.Center
@@ -235,13 +248,8 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-                            handleLogin(
-                                emailInput, passwordInput,
-                                onEmailError = { emailError = it },
-                                onPasswordError = { passwordError = it },
-                                viewModel = viewModel,
-                                onSuccess = onLoginSuccess
-                            )
+                            focusManager.clearFocus()
+                            onLoginClick()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -290,24 +298,5 @@ fun LoginScreen(
                 }
             }
         }
-    }
-}
-
-private fun handleLogin(
-    email: String,
-    password: String,
-    onEmailError: (String?) -> Unit,
-    onPasswordError: (String?) -> Unit,
-    viewModel: AuthViewModel,
-    onSuccess: () -> Unit
-) {
-    val emailValidation = ValidationHelper.validateEmail(email)
-    val passwordValidation = ValidationHelper.validatePassword(password)
-
-    onEmailError(if (emailValidation.isValid) null else emailValidation.errorMessage)
-    onPasswordError(if (passwordValidation.isValid) null else passwordValidation.errorMessage)
-
-    if (emailValidation.isValid && passwordValidation.isValid) {
-        viewModel.login(email, password, onSuccess)
     }
 }

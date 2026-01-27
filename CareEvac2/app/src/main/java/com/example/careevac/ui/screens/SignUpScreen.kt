@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -53,10 +54,17 @@ fun SignUpScreen(
 
     val focusManager = LocalFocusManager.current
 
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
-            kotlinx.coroutines.delay(3000)
-            viewModel.clearError()
+    val onRegisterClick = {
+        val nameVal = ValidationHelper.validateFullName(fullNameInput)
+        val emailVal = ValidationHelper.validateEmail(emailInput)
+        val passVal = ValidationHelper.validatePassword(passwordInput)
+
+        fullNameError = if (nameVal.isValid) null else nameVal.errorMessage
+        emailError = if (emailVal.isValid) null else emailVal.errorMessage
+        passwordError = if (passVal.isValid) null else passVal.errorMessage
+
+        if (nameVal.isValid && emailVal.isValid && passVal.isValid) {
+            viewModel.register(emailInput, passwordInput, fullNameInput, onSignUpSuccess)
         }
     }
 
@@ -75,16 +83,14 @@ fun SignUpScreen(
             Icon(
                 painter = painterResource(id = R.drawable.careevac),
                 contentDescription = "CareEvac Logo",
-                modifier = Modifier.size(300.dp),
+                modifier = Modifier.size(250.dp),
                 tint = Color.Unspecified
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -111,34 +117,20 @@ fun SignUpScreen(
                             fullNameError = null
                         },
                         label = { Text("Ime i prezime") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Full Name"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
                             keyboardType = KeyboardType.Text,
                             imeAction = ImeAction.Next
                         ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         singleLine = true,
-                        enabled = !isLoading,
                         isError = fullNameError != null,
-                        supportingText = {
-                            if (fullNameError != null) {
-                                Text(
-                                    text = fullNameError ?: "",
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
+                        supportingText = { if (fullNameError != null) Text(fullNameError!!, color = MaterialTheme.colorScheme.error) }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = emailInput,
@@ -147,34 +139,16 @@ fun SignUpScreen(
                             emailError = null
                         },
                         label = { Text("Email") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Email,
-                                contentDescription = "Email"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         singleLine = true,
-                        enabled = !isLoading,
                         isError = emailError != null,
-                        supportingText = {
-                            if (emailError != null) {
-                                Text(
-                                    text = emailError ?: "",
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
+                        supportingText = { if (emailError != null) Text(emailError!!, color = MaterialTheme.colorScheme.error) }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = passwordInput,
@@ -183,162 +157,67 @@ fun SignUpScreen(
                             passwordError = null
                         },
                         label = { Text("Lozinka") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Password"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
-                                    imageVector = if (passwordVisible)
-                                        Icons.Default.Visibility
-                                    else
-                                        Icons.Default.VisibilityOff,
-                                    contentDescription = if (passwordVisible)
-                                        "Sakrij lozinku"
-                                    else
-                                        "Prikaži lozinku"
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = null
                                 )
                             }
                         },
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                handleSignUp(
-                                    fullNameInput, emailInput, passwordInput,
-                                    onFullNameError = { fullNameError = it },
-                                    onEmailError = { emailError = it },
-                                    onPasswordError = { passwordError = it },
-                                    viewModel = viewModel,
-                                    onSuccess = onSignUpSuccess
-                                )
-                            }
-                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            onRegisterClick()
+                        }),
                         singleLine = true,
-                        enabled = !isLoading,
                         isError = passwordError != null,
-                        supportingText = {
-                            if (passwordError != null) {
-                                Text(
-                                    text = passwordError ?: "",
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
+                        supportingText = { if (passwordError != null) Text(passwordError!!, color = MaterialTheme.colorScheme.error) }
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    if (errorMessage != null) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFFEBEE)
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = errorMessage ?: "",
-                                color = Color(0xFFD32F2F),
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(12.dp),
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                    if (errorMessage != null && !errorMessage!!.contains("Uspješna")) {
+                        Text(
+                            text = errorMessage ?: "",
+                            color = Color.Red,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
                     Button(
                         onClick = {
-                            handleSignUp(
-                                fullNameInput, emailInput, passwordInput,
-                                onFullNameError = { fullNameError = it },
-                                onEmailError = { emailError = it },
-                                onPasswordError = { passwordError = it },
-                                viewModel = viewModel,
-                                onSuccess = onSignUpSuccess
-                            )
+                            focusManager.clearFocus()
+                            onRegisterClick()
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         enabled = !isLoading,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2C2C2C),
-                            disabledContainerColor = Color(0xFF9E9E9E)
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2C)),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                         } else {
-                            Text(
-                                text = "REGISTRUJ SE",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("REGISTRUJ SE", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Već imate nalog?",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Već imate nalog?", color = Color.Gray)
                         TextButton(onClick = onNavigateToLogin) {
-                            Text(
-                                text = "Prijavite se",
-                                color = Color.Black,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("Prijavite se", fontWeight = FontWeight.Bold, color = Color.Black)
                         }
                     }
                 }
             }
         }
-    }
-}
-
-private fun handleSignUp(
-    fullName: String,
-    email: String,
-    password: String,
-    onFullNameError: (String?) -> Unit,
-    onEmailError: (String?) -> Unit,
-    onPasswordError: (String?) -> Unit,
-    viewModel: AuthViewModel,
-    onSuccess: () -> Unit
-) {
-    val fullNameValidation = ValidationHelper.validateFullName(fullName)
-    val emailValidation = ValidationHelper.validateEmail(email)
-    val passwordValidation = ValidationHelper.validatePassword(password)
-
-    onFullNameError(if (fullNameValidation.isValid) null else fullNameValidation.errorMessage)
-    onEmailError(if (emailValidation.isValid) null else emailValidation.errorMessage)
-    onPasswordError(if (passwordValidation.isValid) null else passwordValidation.errorMessage)
-
-    if (fullNameValidation.isValid && emailValidation.isValid && passwordValidation.isValid) {
-        viewModel.register(email, password, fullName, onSuccess)
     }
 }
