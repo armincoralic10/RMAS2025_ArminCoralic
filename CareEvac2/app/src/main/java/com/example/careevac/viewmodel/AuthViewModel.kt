@@ -4,9 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.careevac.data.repository.AuthRepository
 import com.example.careevac.model.User
-import com.example.careevac.utils.ValidationHelper
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,12 +38,6 @@ class AuthViewModel(
     }
 
     fun login(email: String, password: String, onSuccess: () -> Unit) {
-        val emailRes = ValidationHelper.validateEmail(email)
-        val passRes = ValidationHelper.validatePassword(password)
-
-        if (!emailRes.isValid) { _errorMessage.value = emailRes.errorMessage; return }
-        if (!passRes.isValid) { _errorMessage.value = passRes.errorMessage; return }
-
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
@@ -55,12 +46,7 @@ class AuthViewModel(
 
             if (user != null) {
                 if (repository.isEmailVerified()) {
-
-                    FirebaseFirestore.getInstance().collection("users")
-                        .document(user.uid)
-                        .update("isEmailVerified", true)
-
-                    _currentUser.value = user.copy(isEmailVerified = true)
+                    _currentUser.value = user
                     _isLoading.value = false
                     onSuccess()
                 } else {
@@ -76,15 +62,12 @@ class AuthViewModel(
         }
     }
 
-    fun register(email: String, password: String, fullName: String, onSuccess: () -> Unit) {
-        val nameRes = ValidationHelper.validateFullName(fullName)
-        val emailRes = ValidationHelper.validateEmail(email)
-        val passRes = ValidationHelper.validatePassword(password)
-
-        if (!nameRes.isValid) { _errorMessage.value = nameRes.errorMessage; return }
-        if (!emailRes.isValid) { _errorMessage.value = emailRes.errorMessage; return }
-        if (!passRes.isValid) { _errorMessage.value = passRes.errorMessage; return }
-
+    fun register(
+        email: String,
+        password: String,
+        fullName: String,
+        onSuccess: () -> Unit
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
@@ -92,28 +75,21 @@ class AuthViewModel(
             val userId = repository.register(email, password, fullName)
 
             if (userId != null) {
-                val firebaseUser = FirebaseAuth.getInstance().currentUser
+                try {
+                    val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                    firebaseUser?.sendEmailVerification()
 
-                if (firebaseUser != null) {
-                    firebaseUser.sendEmailVerification()
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                repository.logout()
-                                _currentUser.value = null
-                                _errorMessage.value = "Uspješna registracija! Verifikujte email prije prijave."
-                                _isLoading.value = false
-                                onSuccess()
-                            } else {
-                                _errorMessage.value = "Registracija uspješna, ali slanje emaila nije uspjelo."
-                                _isLoading.value = false
-                            }
-                        }
-                } else {
-                    _errorMessage.value = "Greška: Korisnik nije prepoznat nakon registracije."
+                    repository.logout()
+                    _currentUser.value = null
+                    _errorMessage.value = "✅ Uspješna registracija! Provjerite email za verifikaciju."
+                    _isLoading.value = false
+                    onSuccess()
+                } catch (e: Exception) {
+                    _errorMessage.value = "Registracija uspješna, ali slanje emaila nije uspjelo."
                     _isLoading.value = false
                 }
             } else {
-                _errorMessage.value = "Greška pri registraciji (moguće da email već postoji)."
+                _errorMessage.value = "Greška pri registraciji. Email možda već postoji."
                 _isLoading.value = false
             }
         }
@@ -125,38 +101,66 @@ class AuthViewModel(
         onSuccess()
     }
 
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
+    suspend fun sendPasswordResetEmail(email: String): Boolean {
+        return repository.sendPasswordResetEmail(email)
+    }
+
     fun loadAllUsers() {
         viewModelScope.launch {
             _isLoading.value = true
-            _allUsers.value = repository.getAllUsers()
+            val users = repository.getAllUsers()
+            _allUsers.value = users
             _isLoading.value = false
         }
     }
 
     fun toggleUserStatus(userId: String, isActive: Boolean) {
+        val currentList = _allUsers.value.toList()
+
+        _allUsers.value = currentList.map { user ->
+            if (user.uid == userId) user.copy(isActive = isActive) else user
+        }
+
         viewModelScope.launch {
             val success = repository.toggleUserStatus(userId, isActive)
-            if (success) loadAllUsers()
+            if (!success) {
+                _allUsers.value = currentList
+                _errorMessage.value = "Greška pri promjeni statusa"
+            }
         }
     }
 
     fun changeUserRole(userId: String, newRole: String) {
+        val currentList = _allUsers.value.toList()
+
+        _allUsers.value = currentList.map { user ->
+            if (user.uid == userId) user.copy(role = newRole) else user
+        }
+
         viewModelScope.launch {
             val success = repository.changeUserRole(userId, newRole)
-            if (success) loadAllUsers()
+            if (!success) {
+                _allUsers.value = currentList
+                _errorMessage.value = "Greška pri promjeni uloge"
+            }
         }
     }
 
     fun deleteUser(userId: String) {
+        val currentList = _allUsers.value.toList()
+
+        _allUsers.value = currentList.filter { it.uid != userId }
+
         viewModelScope.launch {
             val success = repository.deleteUser(userId)
-            if (success) loadAllUsers()
+            if (!success) {
+                _allUsers.value = currentList
+                _errorMessage.value = "Greška pri brisanju korisnika"
+            }
         }
     }
-
-    fun clearError() {
-        _errorMessage.value = null
-    }
-
-    suspend fun sendPasswordResetEmail(email: String): Boolean = repository.sendPasswordResetEmail(email)
 }

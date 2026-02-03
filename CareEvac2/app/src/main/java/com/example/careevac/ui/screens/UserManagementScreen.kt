@@ -35,6 +35,8 @@ fun UserManagementScreen(
     var showRoleDialog by remember { mutableStateOf(false) }
     var userToChangeRole by remember { mutableStateOf<User?>(null) }
 
+    var isUpdating by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         authViewModel.loadAllUsers()
     }
@@ -106,9 +108,13 @@ fun UserManagementScreen(
                         UserCard(
                             user = user,
                             isCurrentUser = user.uid == currentUser?.uid,
+                            isUpdating = isUpdating,
                             onToggleStatus = {
+                                isUpdating = true
                                 scope.launch {
                                     authViewModel.toggleUserStatus(user.uid, !user.isActive)
+                                    kotlinx.coroutines.delay(500)
+                                    isUpdating = false
                                 }
                             },
                             onChangeRole = {
@@ -218,6 +224,7 @@ fun UserManagementScreen(
 fun UserCard(
     user: User,
     isCurrentUser: Boolean,
+    isUpdating: Boolean,
     onToggleStatus: () -> Unit,
     onChangeRole: () -> Unit,
     onDelete: () -> Unit
@@ -324,6 +331,24 @@ fun UserCard(
                                 fontWeight = FontWeight.Bold
                             )
                         }
+
+                        if (user.isEmailVerified) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFF00BCD4)
+                                ),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = "✓ EMAIL",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    fontSize = 11.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -337,13 +362,21 @@ fun UserCard(
                 ) {
                     OutlinedButton(
                         onClick = onToggleStatus,
+                        enabled = !isUpdating,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            if (user.isActive) Icons.Default.Clear else Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
+                        if (isUpdating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                if (user.isActive) Icons.Default.Clear else Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             if (user.isActive) "Deaktiviraj" else "Aktiviraj",
@@ -355,6 +388,7 @@ fun UserCard(
 
                     OutlinedButton(
                         onClick = onChangeRole,
+                        enabled = !isUpdating,
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
@@ -368,7 +402,10 @@ fun UserCard(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    IconButton(onClick = onDelete) {
+                    IconButton(
+                        onClick = onDelete,
+                        enabled = !isUpdating
+                    ) {
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = "Obriši",
