@@ -86,7 +86,6 @@ fun AddEditResidentScreen(
                         value = fullName,
                         onValueChange = { fullName = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("npr. Ivan Ivić") },
                         shape = RoundedCornerShape(8.dp),
                         enabled = !isLoading
                     )
@@ -103,7 +102,6 @@ fun AddEditResidentScreen(
                         value = roomNumber,
                         onValueChange = { roomNumber = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("npr. 101") },
                         shape = RoundedCornerShape(8.dp),
                         enabled = !isLoading
                     )
@@ -120,7 +118,6 @@ fun AddEditResidentScreen(
                         value = emergencyContact,
                         onValueChange = { emergencyContact = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("npr. +387 61 123 456") },
                         shape = RoundedCornerShape(8.dp),
                         enabled = !isLoading
                     )
@@ -137,7 +134,6 @@ fun AddEditResidentScreen(
                         value = medicalNotes,
                         onValueChange = { medicalNotes = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("npr. Dijabetes tip 2") },
                         shape = RoundedCornerShape(8.dp),
                         minLines = 2,
                         enabled = !isLoading
