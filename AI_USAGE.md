@@ -17,3 +17,5 @@
 8. Ciscenje sessije nakon logouta
 
 9. Za implementaciju real-time listenera za listu Resident-a (callbackFlow i addSnapshotListener)
+
+10. Pisanje logova u odredjenim fajlovima kako bi u logcatu bilo vidljivo do kojeg dijela se aplikacija izvrsva u slucaju nekog buga
