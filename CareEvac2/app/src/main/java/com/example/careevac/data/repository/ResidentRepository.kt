@@ -25,7 +25,6 @@ class ResidentRepository {
                 close(error)
                 return@addSnapshotListener
             }
-
             if (snapshot != null) {
                 val residents = mutableListOf<Resident>()
 

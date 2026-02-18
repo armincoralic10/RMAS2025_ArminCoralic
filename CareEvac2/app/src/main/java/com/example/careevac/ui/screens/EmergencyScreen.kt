@@ -30,7 +30,7 @@ fun EmergencyScreen(
     authViewModel: com.example.careevac.viewmodel.AuthViewModel
 ) {
     var selectedTabIndex by remember { mutableStateOf(1) }
-    val tabs = listOf("PRIORITETI", "SVI", "EVAK.")
+    val tabs = listOf("PRIORITETI", "SVI", "SOBE", "EVAK.")
 
     val residents by viewModel.residents.collectAsState()
     val evacuatedCount by viewModel.evacuatedCount.collectAsState()
@@ -105,7 +105,11 @@ fun EmergencyScreen(
                     0 -> residents.filter {
                         it.mobilityStatus.uppercase().contains("NEPOKRETAN") && !it.isEvacuated
                     }
-                    2 -> residents.filter { it.isEvacuated }
+
+                    2 -> residents.filter{ !it.isEvacuated} .sortedBy { resident ->
+                        resident.roomNumber.toIntOrNull() ?: 99999
+                    }
+                    3 -> residents.filter { it.isEvacuated }
                     else -> residents.filter { !it.isEvacuated }
                 }
 

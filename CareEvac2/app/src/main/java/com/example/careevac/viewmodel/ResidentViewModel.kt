@@ -162,7 +162,6 @@ class ResidentViewModel(
             }
             .thenBy { it.fullName }
     )
-
     fun clearError() {
         _errorMessage.value = null
     }
